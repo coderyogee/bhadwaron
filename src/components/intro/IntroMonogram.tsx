@@ -1,0 +1,79 @@
+import { cn } from "@/lib/utils";
+
+/**
+ * The animated wordmark that opens the intro.
+ *
+ * Three parts, all CSS: the letters rise and track in, a bronze rule draws from
+ * the centre, and a single dot settles. `transform` and `opacity` only — the
+ * letters animate `letter-spacing`, which is not a layout property for a
+ * non-wrapping inline element, but it is animated on a non-scrolling, fixed-size
+ * element so there is no reflow to observe.
+ *
+ * The word is the organisation's full name, not the abbreviation. That makes it
+ * long enough to wrap, so it is set word by word: each word is an unbreakable
+ * unit and lines break only at the spaces. Breaking mid-word ("Educa- / tional")
+ * reads as a rendering bug, while a clean two-line lockup reads as designed.
+ *
+ * Decorative: the parent overlay is `aria-hidden`, and the real wordmark is in
+ * the masthead underneath.
+ */
+export function IntroMonogram() {
+  const WORDS = "Institute for Educational Accountability".split(" ");
+
+  // The last letter must start early enough that its 600ms rise finishes well
+  // before contributors begin at t=1200. 600ms total for all letters keeps the
+  // monogram phase clean and avoids letters still animating during the wipe.
+  const LETTERS = WORDS.flatMap((word, wi) =>
+    word.split("").map((letter, li) => ({ key: `${wi}-${li}`, letter })),
+  );
+  const STAGGER = Math.min(15, Math.floor(600 / LETTERS.length));
+
+  // Word boundaries, so each word renders as one unbreakable unit.
+  const STARTS: number[] = WORDS.map((_, wi) => WORDS.slice(0, wi).join("").length);
+
+  return (
+    <div className="flex flex-col items-center gap-5">
+      <div className="flex flex-col items-center">
+        <span className="flex max-w-[22ch] flex-wrap justify-center gap-x-[0.28em] font-serif text-4xl font-bold leading-tight tracking-normal text-ink-inverse sm:text-5xl">
+          {WORDS.map((word, wi) => (
+            <span key={word} className="inline-flex whitespace-nowrap">
+              {word.split("").map((letter, li) => {
+                const i = (STARTS[wi] ?? 0) + li;
+                return (
+                  <span
+                    key={`${word}-${letter}-${li}`}
+                    className="inline-block animate-[intro-letters-in_600ms_cubic-bezier(0.16,1,0.3,1)_both]"
+                    style={{ animationDelay: `${200 + i * STAGGER}ms` }}
+                  >
+                    {letter}
+                  </span>
+                );
+              })}
+            </span>
+          ))}
+        </span>
+
+        {/* The rule draws from the centre, not the left. */}
+        <span
+          aria-hidden="true"
+          className={cn(
+            "mt-3 block h-0.5 w-40 origin-center bg-gold sm:w-48",
+            "animate-[intro-rule-draw_500ms_cubic-bezier(0.16,1,0.3,1)_both]",
+          )}
+          style={{ animationDelay: "700ms" }}
+        />
+      </div>
+
+      {/* The Institute's emblem, where a full stop used to be. */}
+      <img
+        src="/brand/emblem-gold.webp"
+        alt=""
+        width={80}
+        height={80}
+        className="block size-16 sm:size-20 animate-[intro-dot-in_400ms_cubic-bezier(0.16,1,0.3,1)_both]"
+        style={{ animationDelay: "1200ms" }}
+      />
+
+    </div>
+  );
+}
